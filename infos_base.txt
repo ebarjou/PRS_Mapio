@@ -1,0 +1,17 @@
+Touches :
+    ← →     : Déplacement horizontal
+    ↑       : Sauter
+    Espace  : Tirer un missile/Créer un bloc
+    E       : Passer en Mode Editeur
+    Tab     : Changer de type de bloc
+    Echap   : Sortir du Mode Editeur/Quitter le jeu
+    S       : Sauvegarder
+
+
+Caractéristiques des objets :
+    Generator
+    Collectible
+    Destructible
+    Solidité
+    Image (PNG)
+    Nombre de frames
