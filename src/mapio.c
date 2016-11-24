@@ -39,7 +39,7 @@ void map_new (unsigned width, unsigned height)
 void map_save (char *filename)
 {
   // TODO
-  int fd = open(filename, O_WRONLY || O_CREAT || O_TRUNC, 0666);
+  int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 
   // Find and write the sizes of the map
   int width = map_width();
@@ -54,8 +54,10 @@ void map_save (char *filename)
   int cpt = 0; // Number of object types found
   for (int y = 0 ; y < height ; y++) { // For each square in the map
     for (int x = 0 ; x < width ; x++) {
-      int obj_temp;
-      if((obj_temp = map_get(x, y)) != MAP_OBJECT_NONE) { // If its object isn't empty
+      int obj_temp = map_get(x, y);
+      write(fd, &obj_temp, sizeof(int)); // Write its object in the file
+
+      if(obj_temp != MAP_OBJECT_NONE) { // If its object isn't empty
         int new_obj = 0;
         for (int i = 0 ; i < cpt ; i++) { // And we don't know it yet
           if (obj_temp == objs_diff[cpt]) {
@@ -69,6 +71,7 @@ void map_save (char *filename)
       }
     }
   }
+
   // Write the number of objects so it know how many have to be read
   write(fd, &cpt, sizeof(int));
   for(int i = 0 ; i < cpt ; i++) { // Then write the caracteristics of the objects
@@ -77,27 +80,37 @@ void map_save (char *filename)
     int value = sizeof(map_name);
     write(fd, &value, sizeof(int)); // The length of the filename
     write(fd, map_name, value); // Then, the filename
+
     unsigned value_uns = map_get_frames(obj);
     write(fd, &value_uns, sizeof(unsigned)); // The number of frames/sprites
+
     value = map_get_solidity(obj);
     write(fd, &value, sizeof(int)); // The solidity of the object (0,1 or 2)
+
     value = map_is_destructible(obj);
     write(fd, &value, sizeof(int)); // The destructability of the object (0 or 1)
+
     value = map_is_collectible(obj);
     write(fd, &value, sizeof(int)); // The collectibility of the object (0 or 1)
+
     value = map_is_generator(obj);
     write(fd, &value, sizeof(int)); // The generability of the object (0 or 1)
   }
 
-  // TODO : write le contenu de chaque case de la carte
-
-  fprintf (stderr, "Sorry: Map save is not yet implemented\n");
+  //fprintf (stderr, "Sorry: Map save is not yet implemented\n");
   close(fd);
 }
 
 void map_load (char *filename)
 {
-  // TODO
+  int fd = open(filename, O_RDONLY);
+  // TODO Read in order :
+  // Width
+  // Height
+  // The content of each case with "for(y{for(x{})})""
+  // The number of objects
+  // The characteristics of each object (filename.length, filename, nb_frames, etc.)
+  close(fd);
   exit_with_error ("Map load is not yet implemented\n");
 }
 
