@@ -60,13 +60,13 @@ void map_save (char *filename)
       if(obj_temp != MAP_OBJECT_NONE) { // If its object isn't empty
         int new_obj = 0;
         for (int i = 0 ; i < cpt ; i++) { // And we don't know it yet
-          if (obj_temp == objs_diff[cpt]) {
+          if (obj_temp == objs_diff[i]) { // TODO Verification failing
             new_obj = 1;
             break;
           }
         }
         if (new_obj == 0) {
-          objs_diff[cpt++] = obj_temp;
+          objs_diff[cpt++] = obj_temp; // OVERWRITE WIDTH
         }
       }
     }
