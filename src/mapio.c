@@ -68,10 +68,10 @@ void map_save (char *filename)
           }
         }
         if (new_obj == 0) { // Then we write it in a list
-		  objs_old_to_new[obj_temp] = cpt;
-          objs_diff[cpt++] = obj_temp; // OVERWRITE WIDTH
+          objs_old_to_new[obj_temp] = cpt;
+          objs_diff[cpt++] = obj_temp;
         }
-		// Write its object's new ID in the file
+        // Write its object's new ID in the file
         write(fd, objs_old_to_new+obj_temp, sizeof(int));
       }
 	  else
@@ -83,9 +83,9 @@ void map_save (char *filename)
   write(fd, &cpt, sizeof(int));
   // Then write the characteristics of the objects
   for(int i = 0 ; i < cpt ; i++) {
-    int obj = i;
+    int obj = objs_diff[i];
     char* obj_filename = map_get_name(obj);
-    int value = sizeof(obj_filename);
+    int value = strlen(obj_filename);
     write(fd, &value, sizeof(int)); // The length of the filename
     write(fd, obj_filename, value*sizeof(char)); // Then, the filename
 
@@ -118,6 +118,8 @@ void map_load (char *filename)
   int height = map_height();
   read(fd, &width, sizeof(int));
   read(fd, &height, sizeof(int));
+
+  map_allocate (width, height);
   
   for (int y = 0 ; y < height ; y++) { // For each square in the map
     for (int x = 0 ; x < width ; x++) {
@@ -135,26 +137,31 @@ void map_load (char *filename)
   // Then read the characteristics of the objects and create it
   for(int i = 0 ; i < nb_obj ; i++) {
     int file_length;
-	read(fd, &file_length, sizeof(int));
-	char obj_filename[file_length];
-	read(fd, obj_filename, file_length*sizeof(char));
+    read(fd, &file_length, sizeof(int));
+    char obj_filename[file_length];
+    for (int j = 0 ; j < file_length ; j++)
+      read(fd, &obj_filename[j], sizeof(char));
+    //read(fd, obj_filename, file_length*sizeof(char));
 
     unsigned nb_sprites;
-    read(fd, &nb_sprited, sizeof(unsigned)); // The number of frames/sprites
+    read(fd, &nb_sprites, sizeof(unsigned)); // The number of frames/sprites
 
     int solidity;
     read(fd, &solidity, sizeof(int)); // The solidity of the object (0|1|2)
 
     int destructibility;
     read(fd, &destructibility, sizeof(int)); // The destructibility of the object (0|1)
+    destructibility *= MAP_OBJECT_DESTRUCTIBLE;
 
     int collectibility;
     read(fd, &collectibility, sizeof(int)); // The collectibility of the object (0|1)
+    collectibility *= MAP_OBJECT_COLLECTIBLE;
 
     int generability;
     read(fd, &generability, sizeof(int)); // The generability of the object (0|1)
+    generability *= MAP_OBJECT_GENERATOR;
 	
-	map_object_add (obj_filename, nb_sprites,
+    map_object_add (obj_filename, nb_sprites,
 			solidity | destructibility | collectibility | generability);
   }
   
