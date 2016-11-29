@@ -138,9 +138,10 @@ void map_load (char *filename)
   for(int i = 0 ; i < nb_obj ; i++) {
     int file_length;
     read(fd, &file_length, sizeof(int));
-    char obj_filename[file_length];
+    char obj_filename[file_length+1];
     for (int j = 0 ; j < file_length ; j++)
       read(fd, &obj_filename[j], sizeof(char));
+    obj_filename[file_length]='\0';
     //read(fd, obj_filename, file_length*sizeof(char));
 
     unsigned nb_sprites;
