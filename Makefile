@@ -51,6 +51,8 @@ ifneq ($(MAKECMDGOALS),clean)
 -include $(DEPENDS)
 endif
 
+maputil: util/maputil.c
+	$(CC) util/maputil.c -o maputil
 
 .PHONY: clean
 clean: 
