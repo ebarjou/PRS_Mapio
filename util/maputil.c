@@ -38,7 +38,7 @@ int parseAction(char* arg){
 }
 
 int parseMapvar(char* arg){
-	cmd = arg+5; // Skip "--[g/s]et"
+	char* cmd = arg+5; // Skip "--[g/s]et"
 	if (strcmp(cmd, "height") == 0){
 		return HEIGHT;
 	} else if(strcmp(cmd, "width") == 0){
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]){
 				case INFO:
 					printf("Action INFO\n");
 					break;
-				case default:
+				default:
 					break;
 			}
 			break;
@@ -89,13 +89,14 @@ int main(int argc, char* argv[]){
 				case HEIGHT:
 					printf("Action HEIGHT\n");
 					break;
-				case default:
+				default:
 					break;
+			}
 			break;
 		case SET_OBJECT:
 			printf("Action SET_OBJECT\n");
 			break;
-		case default:
+		default:
 			break;
 	}
 
