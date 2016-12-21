@@ -17,6 +17,73 @@ void usage(){
 	exit(0);
 }
 
+void get(int fd, int type) {
+	int error = 0;
+	int width, height;
+	// Read height and width
+	read(fd, &width, sizeof(int))<0?++error:error;
+	read(fd, &height, sizeof(int))<0?++error:error;
+	if (type == WIDTH || type == INFO){
+		printf("width : %d\n", width);
+		if (type == WIDTH) return;
+	}
+	if (type == HEIGHT || type == INFO){
+		printf("height : %d\n", height);
+		if (type == HEIGHT) return;
+	}
+	
+	int nb_obj, solidity, destructibility, collectibility, generability;
+	unsigned nb_sprites;
+	
+	// Read the number of different objects
+	read(fd, &nb_obj, sizeof(int))<0?++error:error;
+	printf("objects : %d\n", nb_obj);
+	// Read the characteristics of the objects and create it
+	for(int i = 0 ; i < nb_obj ; i++) {
+		int file_length;
+		read(fd, &file_length, sizeof(int))<0?++error:error;
+		char obj_filename[file_length+1];
+		for (int j = 0 ; j < file_length ; j++)
+			read(fd, &obj_filename[j], sizeof(char))<0?++error:error;
+		obj_filename[file_length]='\0';
+		//read(fd, obj_filename, file_length*sizeof(char));
+		
+		read(fd, &nb_sprites, sizeof(unsigned))<0?++error:error; // The number of frames/sprites
+		
+		read(fd, &solidity, sizeof(int))<0?++error:error; // The solidity of the object (0|1|2)
+		
+		read(fd, &destructibility, sizeof(int))<0?++error:error; // The destructibility of the object (0|1)
+		
+		read(fd, &collectibility, sizeof(int))<0?++error:error; // The collectibility of the object (0|1)
+		
+		read(fd, &generability, sizeof(int))<0?++error:error; // The generability of the object (0|1)
+		
+		if (type == OBJECTS || type == INFO){
+			printf("Object : %s\n", obj_filename);
+			printf("\tSprites : %d\n\tSolidity : %d\n\tDestructibility : %d\n\tCollectibility : %d\n\tGenerability : %d\n\t",
+					nb_sprites, solidity, destructibility, collectibility, generability);
+		}
+	}
+	/*
+  // Then read the objects on the map
+  for (int y = 0 ; y < height ; y++) { // For each square in the map
+    for (int x = 0 ; x < width ; x++) {
+      int obj_val;
+	  read(fd, &obj_val, sizeof(int))<0?++error:error;
+	  if (obj_val != MAP_OBJECT_NONE) // No need to insert an empty object
+		map_set(x, y, obj_val);
+    }
+  }
+  
+  map_object_end ();
+  close(fd);
+  if(error>0){
+    fprintf (stderr, "Error occured during load\n");
+  }	
+  //exit_with_error ("Map load is not yet implemented\n");
+*/
+}
+
 int parseAction(char* arg){
 	char* cmd = arg;
 	if(cmd[0] == '-' && cmd[1] == '-'){
@@ -55,7 +122,7 @@ int parseMapvar(char* arg){
 
 int main(int argc, char* argv[]){
 	if (argc < 3) usage();
-	int action, type;
+	int action, type, fd;
 	printf("Ouverture du fichier %s\n", argv[1]);
 	action = parseAction(argv[2]);
 	if(action == -1){
@@ -70,25 +137,12 @@ int main(int argc, char* argv[]){
 	switch (action){
 		case GET:
 			printf("Action GET\n");
-			switch (type){
-				case WIDTH:
-					printf("Action WIDTH\n");
-					break;
-				case HEIGHT:
-					printf("Action HEIGHT\n");
-					break;
-				case OBJECTS:
-					printf("Action OBJECTS\n");
-					break;
-				case INFO:
-					printf("Action INFO\n");
-					break;
-				default:
-					break;
-			}
+			fd = open(argv[1], O_RDONLY);
+			get(fd, type);
 			break;
 		case SET_DIM:
 			printf("Action SET_DIM\n");
+			fd = open(argv[1], O_RDWR);
 			switch (type){
 				case WIDTH:
 					printf("Action WIDTH\n");
@@ -102,9 +156,11 @@ int main(int argc, char* argv[]){
 			break;
 		case SET_OBJECT:
 			printf("Action SET_OBJECT\n");
+			fd = open(argv[1], O_RDWR);
 			break;
 		case PRUNE:
 			printf("Action PRUNE\n");
+			fd = open(argv[1], O_RDWR);
 			break;
 		default:
 			break;
