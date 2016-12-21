@@ -64,24 +64,6 @@ void get(int fd, int type) {
 					nb_sprites, solidity, destructibility, collectibility, generability);
 		}
 	}
-	/*
-  // Then read the objects on the map
-  for (int y = 0 ; y < height ; y++) { // For each square in the map
-    for (int x = 0 ; x < width ; x++) {
-      int obj_val;
-	  read(fd, &obj_val, sizeof(int))<0?++error:error;
-	  if (obj_val != MAP_OBJECT_NONE) // No need to insert an empty object
-		map_set(x, y, obj_val);
-    }
-  }
-  
-  map_object_end ();
-  close(fd);
-  if(error>0){
-    fprintf (stderr, "Error occured during load\n");
-  }	
-  //exit_with_error ("Map load is not yet implemented\n");
-*/
 }
 
 int parseAction(char* arg){
