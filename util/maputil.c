@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-enum action_enum {GET, SET_DIM, SET_OBJECT};
+enum action_enum {GET, SET_DIM, SET_OBJECT, PRUNE};
 enum mapvar_enum {WIDTH, HEIGHT, OBJECTS, INFO};
 
 void usage(){
@@ -32,6 +32,8 @@ int parseAction(char* arg){
 					return SET_OBJECT;
 				}
 			}
+		} else if (strcmp(cmd, "pruneobjects")){
+			return PRUNE;
 		}
 	}
 	return -1;
@@ -43,9 +45,9 @@ int parseMapvar(char* arg){
 		return HEIGHT;
 	} else if(strcmp(cmd, "width") == 0){
 		return WIDTH;
-	} else if(strcmp(cmd, "objects") == 0){ // Shouldn't get to this else if --set
+	} else if(strcmp(cmd, "objects") == 0){
 		return OBJECTS;
-	} else if(strcmp(cmd, "info") == 0){
+	} else if(strcmp(cmd, "info") == 0){ // Shouldn't get to this else if --set
 		return INFO;
 	}
 	return -1;
@@ -53,13 +55,18 @@ int parseMapvar(char* arg){
 
 int main(int argc, char* argv[]){
 	if (argc < 3) usage();
+	int action, type;
 	printf("Ouverture du fichier %s\n", argv[1]);
-	int action = parseAction(argv[2]);
-	int type = parseMapvar(argv[2]);
-	if(action == -1 || type == -1){
+	action = parseAction(argv[2]);
+	if(action == -1){
 		usage();
 	}
-
+	if (action != PRUNE){
+		type = parseMapvar(argv[2]);
+		if(type == -1){
+			usage();
+		}
+	}
 	switch (action){
 		case GET:
 			printf("Action GET\n");
@@ -95,6 +102,9 @@ int main(int argc, char* argv[]){
 			break;
 		case SET_OBJECT:
 			printf("Action SET_OBJECT\n");
+			break;
+		case PRUNE:
+			printf("Action PRUNE\n");
 			break;
 		default:
 			break;
