@@ -45,10 +45,7 @@ void map_new (unsigned width, unsigned height)
 void map_save (char *filename)
 {
   // TODO : Verifier les valeurs de retours des read/write
-  if(mkdir("./maps", 0777) == -1){
-    //Error
-    fprintf(stderr, "Error : Can't access \"%s\".\n", filename);
-  }
+  mkdir("./maps", 0777);
   int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
   int error = 0;
   // Find and write the sizes of the map

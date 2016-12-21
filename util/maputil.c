@@ -60,7 +60,7 @@ void get(int fd, int type) {
 		
 		if (type == OBJECTS || type == INFO){
 			printf("Object : %s\n", obj_filename);
-			printf("\tSprites : %d\n\tSolidity : %d\n\tDestructibility : %d\n\tCollectibility : %d\n\tGenerability : %d\n\t",
+			printf("\tSprites : %d\n\tSolidity : %d\n\tDestructibility : %d\n\tCollectibility : %d\n\tGenerability : %d\n",
 					nb_sprites, solidity, destructibility, collectibility, generability);
 		}
 	}
@@ -118,7 +118,6 @@ int main(int argc, char* argv[]){
 	}
 	switch (action){
 		case GET:
-			printf("Action GET\n");
 			fd = open(argv[1], O_RDONLY);
 			get(fd, type);
 			break;
