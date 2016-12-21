@@ -64,6 +64,8 @@ void map_save (char *filename)
   // don't have to search for the object every time when writing
   int objs_old_to_new[nb_obj_diff];
   for (int i = 0 ; i < nb_obj_diff ; i++) objs_diff[i] = -1; // Initialization
+  
+  // Look for all object_types in the map
   int cpt = 0; // Number of object types found
   for (int y = 0 ; y < height ; y++) { // For each square in the map
     for (int x = 0 ; x < width ; x++) {
@@ -81,11 +83,7 @@ void map_save (char *filename)
           objs_old_to_new[obj_temp] = cpt;
           objs_diff[cpt++] = obj_temp;
         }
-        // Write its object's new ID in the file
-        write(fd, objs_old_to_new+obj_temp, sizeof(int))<0?++error:error;
       }
-	  else
-		write(fd, &obj_temp, sizeof(int))<0?++error:error; // Write -1 as object in the file
     }
   }
 
@@ -114,6 +112,21 @@ void map_save (char *filename)
     value = map_is_generator(obj);
     write(fd, &value, sizeof(int))<0?++error:error; // The generability of the object
   }
+  
+  // Now we write all the objects themselves
+  for (int y = 0 ; y < height ; y++) { // For each square in the map
+    for (int x = 0 ; x < width ; x++) {
+      int obj_temp = map_get(x, y);
+
+      if(obj_temp != MAP_OBJECT_NONE) { // If its object isn't empty
+        // Write its object's new_ID in the file
+        write(fd, objs_old_to_new+obj_temp, sizeof(int))<0?++error:error;
+      }
+	  else // If it IS empty
+		// Write -1 as object in the file
+		write(fd, &obj_temp, sizeof(int))<0?++error:error;
+    }
+  }
 
   close(fd);
 
@@ -135,14 +148,6 @@ void map_load (char *filename)
 
   map_allocate (width, height);
   
-  for (int y = 0 ; y < height ; y++) { // For each square in the map
-    for (int x = 0 ; x < width ; x++) {
-      int obj_val;
-	  read(fd, &obj_val, sizeof(int))<0?++error:error;
-	  //if (obj_val != MAP_OBJECT_NONE)
-	  map_set(x, y, obj_val);
-    }
-  }
   // Read the number of different objects and make the program know it
   int nb_obj;
   read(fd, &nb_obj, sizeof(int))<0?++error:error;
@@ -178,6 +183,16 @@ void map_load (char *filename)
 	
     map_object_add (obj_filename, nb_sprites,
 			solidity | destructibility | collectibility | generability);
+  }
+  
+  // Then read the objects on the map
+  for (int y = 0 ; y < height ; y++) { // For each square in the map
+    for (int x = 0 ; x < width ; x++) {
+      int obj_val;
+	  read(fd, &obj_val, sizeof(int))<0?++error:error;
+	  if (obj_val != MAP_OBJECT_NONE) // No need to insert an empty object
+		map_set(x, y, obj_val);
+    }
   }
   
   map_object_end ();
