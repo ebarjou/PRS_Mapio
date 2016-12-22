@@ -66,6 +66,63 @@ void get(int fd, int type) {
 	}
 }
 
+void setDim(int fd, int type, int newVal) {
+	int oldHeight, oldWidth, newHeight, newWidth;
+	read(fd, &oldWidth, sizeof(int));
+	read(fd, &oldHeight, sizeof(int));
+	lseek(fd, 0, SEEK_SET);
+	if (type == WIDTH){
+		write(fd, &newVal, sizeof(int));
+		printf("Set width : %d\n", newVal);
+		newWidth = newVal;
+		newHeight = oldHeight;
+	}
+	if (type == HEIGHT){
+		lseek(fd, sizeof(int), SEEK_SET);
+		write(fd, &newVal, sizeof(int));
+		printf("new height : %d\n", newVal);
+		newWidth = oldWidth;
+		newHeight = newVal;
+	}
+	//Now we need to move all objects on the map to match the new size
+	int nb_obj;
+	read(fd, &nb_obj, sizeof(int));
+	for(int i = 0 ; i < nb_obj ; i++) {
+		int file_length;
+		read(fd, &file_length, sizeof(int));
+		lseek(fd, sizeof(char)*file_length, SEEK_CUR);
+		lseek(fd, sizeof(unsigned)+sizeof(int)*4, SEEK_CUR);
+	}
+	//Init 2D array tha t represent the new map
+	int** objMap;
+	objMap = malloc(sizeof(int*)*newWidth);
+	for (int i = 0; i < newWidth; ++i) objMap[i] = malloc(sizeof(int)*newHeight);
+	
+	for (int y = 0 ; y < newHeight ; y++)
+		for (int x = 0 ; x < newWidth ; x++) objMap[x][y] = -1;
+	//We put old value in the grid
+	for (int y = 0 ; y < oldHeight ; y++) {
+		for (int x = 0 ; x < oldWidth ; x++) {
+			int obj_val;
+			read(fd, &obj_val, sizeof(int));
+			if (x < newWidth && y < newHeight) {
+				objMap[x][y] = obj_val;
+				printf("%d.", obj_val==-1?0:1);
+			}
+		}
+		printf("\n");
+	}
+	//And we rewrite the new value
+	lseek(fd, -sizeof(int)*oldHeight*oldWidth, SEEK_SET);
+	for (int y = 0 ; y < newHeight ; y++) {
+		for (int x = 0 ; x < newWidth ; x++) {
+			write(fd, &objMap[x][y], sizeof(int));
+		}
+	}
+	//Now we truncate the file if needed (new size < old size)
+	//ftruncate(fd, size);
+}
+
 int parseAction(char* arg){
 	char* cmd = arg;
 	if(cmd[0] == '-' && cmd[1] == '-'){
@@ -122,18 +179,8 @@ int main(int argc, char* argv[]){
 			get(fd, type);
 			break;
 		case SET_DIM:
-			printf("Action SET_DIM\n");
 			fd = open(argv[1], O_RDWR);
-			switch (type){
-				case WIDTH:
-					printf("Action WIDTH\n");
-					break;
-				case HEIGHT:
-					printf("Action HEIGHT\n");
-					break;
-				default:
-					break;
-			}
+			setDim(fd, type, atoi(argv[3]));
 			break;
 		case SET_OBJECT:
 			printf("Action SET_OBJECT\n");
@@ -146,6 +193,6 @@ int main(int argc, char* argv[]){
 		default:
 			break;
 	}
-
+	close(fd);
 	return EXIT_SUCCESS;
 }
