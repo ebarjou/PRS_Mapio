@@ -47,7 +47,6 @@ void get(int fd, int type) {
 			read(fd, &obj_filename[j], sizeof(char))<0?++error:error;
 		obj_filename[file_length]='\0';
 		//read(fd, obj_filename, file_length*sizeof(char));
-		
 		read(fd, &nb_sprites, sizeof(unsigned))<0?++error:error; // The number of frames/sprites
 		
 		read(fd, &solidity, sizeof(int))<0?++error:error; // The solidity of the object (0|1|2)
@@ -64,6 +63,10 @@ void get(int fd, int type) {
 					nb_sprites, solidity, destructibility, collectibility, generability);
 		}
 	}
+}
+
+void setObjects(int fd, char* val[]) {
+	
 }
 
 void setDim(int fd, int type, int newVal) {
@@ -85,42 +88,53 @@ void setDim(int fd, int type, int newVal) {
 		newHeight = newVal;
 	}
 	//Now we need to move all objects on the map to match the new size
-	int nb_obj;
+	//	TODO : Nettoyer le code, remplacer les read par des lseek
+	int null, nb_obj;
+	lseek(fd, 0, SEEK_SET);
+	read(fd, &null, sizeof(int));
+	read(fd, &null, sizeof(int));
 	read(fd, &nb_obj, sizeof(int));
-	for(int i = 0 ; i < nb_obj ; i++) {
+	for(int i = 0; i < nb_obj; i++) {
 		int file_length;
 		read(fd, &file_length, sizeof(int));
-		lseek(fd, sizeof(char)*file_length, SEEK_CUR);
-		lseek(fd, sizeof(unsigned)+sizeof(int)*4, SEEK_CUR);
+		char obj;
+		for (int j = 0 ; j < file_length ; j++)
+			read(fd, &obj, sizeof(char));
+		read(fd, &null, sizeof(unsigned));
+		read(fd, &null, sizeof(int));
+		read(fd, &null, sizeof(int));
+		read(fd, &null, sizeof(int));
+		read(fd, &null, sizeof(int));
 	}
-	//Init 2D array tha t represent the new map
+	//Init 2D array that represent the new map
 	int** objMap;
 	objMap = malloc(sizeof(int*)*newWidth);
 	for (int i = 0; i < newWidth; ++i) objMap[i] = malloc(sizeof(int)*newHeight);
-	
+	//Init the map empty
 	for (int y = 0 ; y < newHeight ; y++)
 		for (int x = 0 ; x < newWidth ; x++) objMap[x][y] = -1;
-	//We put old value in the grid
+	//Save the location of the grid and put old value in the new grid
+	int position = lseek(fd, 0, SEEK_CUR);
 	for (int y = 0 ; y < oldHeight ; y++) {
 		for (int x = 0 ; x < oldWidth ; x++) {
 			int obj_val;
 			read(fd, &obj_val, sizeof(int));
 			if (x < newWidth && y < newHeight) {
 				objMap[x][y] = obj_val;
-				printf("%d.", obj_val==-1?0:1);
 			}
+		}
+	}
+	//And we rewrite the new value
+	lseek(fd, position, SEEK_SET);
+	for (int y = 0 ; y < newHeight ; y++) {
+		for (int x = 0 ; x < newWidth ; x++) {
+			printf("%d.", objMap[x][y]==-1?0:1);
+			write(fd, &objMap[x][y], sizeof(int));
 		}
 		printf("\n");
 	}
-	//And we rewrite the new value
-	lseek(fd, -sizeof(int)*oldHeight*oldWidth, SEEK_SET);
-	for (int y = 0 ; y < newHeight ; y++) {
-		for (int x = 0 ; x < newWidth ; x++) {
-			write(fd, &objMap[x][y], sizeof(int));
-		}
-	}
 	//Now we truncate the file if needed (new size < old size)
-	//ftruncate(fd, size);
+	//TODO : si le fichier est plus, petit, ftruncate(fd, size);
 }
 
 int parseAction(char* arg){
@@ -185,6 +199,7 @@ int main(int argc, char* argv[]){
 		case SET_OBJECT:
 			printf("Action SET_OBJECT\n");
 			fd = open(argv[1], O_RDWR);
+			setObjects(fd, argv+3);
 			break;
 		case PRUNE:
 			printf("Action PRUNE\n");

@@ -187,9 +187,11 @@ void map_load (char *filename)
     for (int x = 0 ; x < width ; x++) {
       int obj_val;
 	  read(fd, &obj_val, sizeof(int))<0?++error:error;
+	  printf("%d.", obj_val==-1?0:1);
 	  if (obj_val != MAP_OBJECT_NONE) // No need to insert an empty object
 		map_set(x, y, obj_val);
     }
+	printf("\n");
   }
   
   map_object_end ();
