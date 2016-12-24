@@ -8,6 +8,7 @@
 
 enum action_enum {GET, SET_DIM, SET_OBJECT, PRUNE};
 enum mapvar_enum {WIDTH, HEIGHT, OBJECTS, INFO};
+enum object_carac {SOLID, DESTRU, COLLEC, GENER};
 
 void usage(){
 	printf("maputil <file> --get[width, height, objects, info]\n");
@@ -65,8 +66,37 @@ void get(int fd, int type) {
 	}
 }
 
-void setObjects(int fd, char* val[]) {
-	
+void setObjects(int fd, int nbval, char* val[]) {
+	//TODO Fonctionne uniquement pour ajouter une objet en l'état
+	//val[6] : filename, frames, solidity, destructability, collectibility, generator
+	char* file = "filename";//val[0];
+	unsigned frames = 1;//(unsigned)atoi(val[1]);
+	int param[4];//solidity, destruct, collec, gener
+	for (int i = 0; i < 4; ++i) param[i] = 1;
+	//parse args
+	for (int i = 0; i < nbval; ++i){
+		printf("%s\n", val[i]);
+		if (strcmp(val[i], "solid") == 0){
+			if (!strcmp(val[i], "not-") == 0){
+				param[1] = 1;
+			}
+		}
+	}
+	//TODO Erreur lors de la réécriture
+	//Read then write new object number
+	int nb_obj;
+	lseek(fd, sizeof(int)*2, SEEK_SET);
+	read(fd, &nb_obj, sizeof(int));
+	lseek(fd, sizeof(int)*2, SEEK_SET);
+	nb_obj++;
+	write(fd, &nb_obj, sizeof(int));
+	//write new object
+	lseek(fd, 0, SEEK_END);
+	write(fd, file, 8*sizeof(char));
+	write(fd, &frames, sizeof(unsigned));
+	for (int i = 0; i < 4; ++i) {
+		write(fd, &param[i], sizeof(int));
+	}
 }
 
 void setDim(int fd, int type, int newVal) {
@@ -152,7 +182,7 @@ int parseAction(char* arg){
 					return SET_OBJECT;
 				}
 			}
-		} else if (strcmp(cmd, "pruneobjects")){
+		} else if (strcmp(cmd, "pruneobjects") == 0){
 			return PRUNE;
 		}
 	}
@@ -199,7 +229,7 @@ int main(int argc, char* argv[]){
 		case SET_OBJECT:
 			printf("Action SET_OBJECT\n");
 			fd = open(argv[1], O_RDWR);
-			setObjects(fd, argv+3);
+			setObjects(fd, argc-3, argv+3);
 			break;
 		case PRUNE:
 			printf("Action PRUNE\n");
