@@ -67,7 +67,7 @@ void get(int fd, int type) {
 }
 
 void setObjects(int fd, int nbval, char* val[]) {
-	//TODO Fonctionne uniquement pour ajouter une objet en l'état
+	//TODO Fonctionne uniquement pour ajouter un objet en l'état
 	//val[6] : filename, frames, solidity, destructability, collectibility, generator
 	char* file = "filename";//val[0];
 	unsigned frames = 1;//(unsigned)atoi(val[1]);
@@ -82,20 +82,54 @@ void setObjects(int fd, int nbval, char* val[]) {
 			}
 		}
 	}
-	//TODO Erreur lors de la réécriture
+	
+	//TODO Erreur lors de la réécriture - Vérifier si c'est corrigé
 	//Read then write new object number
-	int nb_obj;
-	lseek(fd, sizeof(int)*2, SEEK_SET);
+	int nb_obj, width, height;
+	read(fd, &width, sizeof(int));
+	read(fd, &height, sizeof(int));
 	read(fd, &nb_obj, sizeof(int));
 	lseek(fd, sizeof(int)*2, SEEK_SET);
-	nb_obj++;
+	nb_obj+= nbval;
 	write(fd, &nb_obj, sizeof(int));
-	//write new object
-	lseek(fd, 0, SEEK_END);
-	write(fd, file, 8*sizeof(char));
-	write(fd, &frames, sizeof(unsigned));
-	for (int i = 0; i < 4; ++i) {
-		write(fd, &param[i], sizeof(int));
+	// Remember how the objects are placed on the map,
+	// which are written after their characteristics
+	lseek(fd, -sizeof(int)*width+height, SEEK_END);
+	int obj_on_map[height][width];
+	for (int y = 0 ; y < height ; y++) { // For each square in the map
+	    for (int x = 0 ; x < width ; x++) {
+	        read(fd, obj_on_map[height]+height, sizeof(int));
+	    }
+	}
+	//write new object(s)
+	lseek(fd, -sizeof(int)*width+height, SEEK_END);
+	for(int i = 0 ; i < nbval ; i++) {
+		//val[6] : filename, frames, solidity, destructability, collectibility, generator
+		char* file = val[0+i*6];//"filename";
+		unsigned frames = (unsigned)atoi(val[1+i*6]);//1;
+		int param[4];//solidity, destruct, collec, gener
+		for (int j = 0; j < 4; ++j) param[j] = 0;
+		//parse args
+		for (int j = 0; j < 4; ++j){
+			printf("%s\n", val[j+i*6+2]);
+			val[j+i*6+2][4] = 0;
+			// Only need to verify if the "not-" is here, we can verify
+			// the rest elsewhere if we want to make sure it's typed correctly
+			if (strcmp(val[i+i*6+2], "not-") != 0){
+				param[i] = 1;
+			}
+		}
+	    write(fd, file, 8*sizeof(char));
+	    write(fd, &frames, sizeof(unsigned));
+	    for (int i = 0; i < 4; ++i) {
+	        write(fd, &param[i], sizeof(int));
+	    }
+	}
+	// Rewrite the objects in their position on the map
+	for (int y = 0 ; y < height ; y++) { // For each square in the map
+	    for (int x = 0 ; x < width ; x++) {
+	        write(fd, obj_on_map[height]+height, sizeof(int));
+	    }
 	}
 }
 

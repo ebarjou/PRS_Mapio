@@ -110,7 +110,7 @@ void map_save (char *filename)
     write(fd, &value, sizeof(int))<0?++error:error; // The generability of the object
   }
   
-  // Now we write all the objects themselves
+  // Now we write how the objects are placed on the map
   for (int y = 0 ; y < height ; y++) { // For each square in the map
     for (int x = 0 ; x < width ; x++) {
       int obj_temp = map_get(x, y);
