@@ -67,74 +67,47 @@ void get(int fd, int type) {
 }
 
 void setObjects(int fd, int nbval, char* val[]) {
-	//TODO Fonctionne uniquement pour ajouter un objet en l'état
-	//val[6] : filename, frames, solidity, destructability, collectibility, generator
-	char* file = "filename";//val[0];
-	unsigned frames = 1;//(unsigned)atoi(val[1]);
+	if (nbval%6 != 0) return usage();
+	int nb_obj = nbval/6; //Number of objects in params (each object need 6 params)
+	char** cur_obj;
+	char* file;
+	unsigned frames;
 	int param[4];//solidity, destruct, collec, gener
-	for (int i = 0; i < 4; ++i) param[i] = 1;
-	//parse args
-	for (int i = 0; i < nbval; ++i){
-		printf("%s\n", val[i]);
-		if (strcmp(val[i], "solid") == 0){
-			if (!strcmp(val[i], "not-") == 0){
-				param[1] = 1;
-			}
-		}
+	int value, old_nb_obj;
+	lseek(fd, 2*sizeof(int), SEEK_SET);
+	read(fd, &old_nb_obj, sizeof(int));
+	if (old_nb_obj > nb_obj) {
+		printf("Incorrect number of object (found %d, at least %d needed)\n", nb_obj, old_nb_obj);
+		usage();
 	}
-	
-	//TODO Erreur lors de la réécriture - Vérifier si c'est corrigé
-	//Read then write new object number
-	int nb_obj, width, height;
-	read(fd, &width, sizeof(int));
-	read(fd, &height, sizeof(int));
-	read(fd, &nb_obj, sizeof(int));
-	lseek(fd, sizeof(int)*2, SEEK_SET);
-	nb_obj+= nbval;
+	lseek(fd, 2*sizeof(int), SEEK_SET);
 	write(fd, &nb_obj, sizeof(int));
-	// Remember how the objects are placed on the map,
-	// which are written after their characteristics
-	lseek(fd, -sizeof(int)*width+height, SEEK_END);
-	int obj_on_map[height][width];
-	for (int y = 0 ; y < height ; y++) { // For each square in the map
-	    for (int x = 0 ; x < width ; x++) {
-	        read(fd, obj_on_map[height]+height, sizeof(int));
-	    }
-	}
-	//write new object(s)
-	lseek(fd, -sizeof(int)*width+height, SEEK_END);
-	for(int i = 0 ; i < nbval ; i++) {
-		//val[6] : filename, frames, solidity, destructability, collectibility, generator
-		char* file = val[0+i*6];//"filename";
-		unsigned frames = (unsigned)atoi(val[1+i*6]);//1;
-		int param[4];//solidity, destruct, collec, gener
-		for (int j = 0; j < 4; ++j) param[j] = 0;
-		//parse args
-		for (int j = 0; j < 4; ++j){
-			printf("%s\n", val[j+i*6+2]);
-			val[j+i*6+2][4] = 0;
-			// Only need to verify if the "not-" is here, we can verify
-			// the rest elsewhere if we want to make sure it's typed correctly
-			if (strcmp(val[i+i*6+2], "not-") != 0){
-				param[i] = 1;
-			}
-		}
-	    write(fd, file, 8*sizeof(char));
-	    write(fd, &frames, sizeof(unsigned));
-	    for (int i = 0; i < 4; ++i) {
-	        write(fd, &param[i], sizeof(int));
-	    }
-	}
-	// Rewrite the objects in their position on the map
-	for (int y = 0 ; y < height ; y++) { // For each square in the map
-	    for (int x = 0 ; x < width ; x++) {
-	        write(fd, obj_on_map[height]+height, sizeof(int));
-	    }
+	for(int i = 0; i < nb_obj; ++i){
+		cur_obj = val+i*6;
+		file = cur_obj[0];
+		value = strlen(file);
+		frames = (unsigned)atoi(cur_obj[1]);
+		//Each param init at true, then set at false if specified
+		param[0] = 1;
+		if (strcmp(cur_obj[2], "not-solid") == 0) param[0] = 0;
+		param[1] = 1;
+		if (strcmp(cur_obj[3], "not-destructible") == 0) param[1] = 0;
+		param[2] = 1;
+		if (strcmp(cur_obj[4], "not-collectible") == 0) param[2] = 0;
+		param[3] = 1;
+		if (strcmp(cur_obj[5], "not-generator") == 0) param[3] = 0;
+		write(fd, &value, sizeof(int)); // The length of the filename
+		write(fd, file, value*sizeof(char)); // Then, the filename
+		write(fd, &frames, sizeof(unsigned)); // The number of frames/sprites
+		write(fd, &param[0], sizeof(int)); // The solidity of the object (0|1|2)
+		write(fd, &param[1], sizeof(int)); // The destructibility of the object
+		write(fd, &param[2], sizeof(int)); // The collectibility of the object
+		write(fd, &param[3], sizeof(int)); // The generability of the object
 	}
 }
 
 void setDim(int fd, int type, int newVal) {
-	int oldHeight, oldWidth, newHeight, newWidth;
+	int oldHeight, oldWidth, newHeight, newWidth, arg;
 	read(fd, &oldWidth, sizeof(int));
 	read(fd, &oldHeight, sizeof(int));
 	lseek(fd, 0, SEEK_SET);
