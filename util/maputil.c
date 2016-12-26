@@ -66,9 +66,26 @@ void get(int fd, int type) {
 	}
 }
 
+void pruneObjects(int fd){
+	int width, height;
+	// Read height and width
+	read(fd, &width, sizeof(int));
+	read(fd, &height, sizeof(int));
+	
+	int nb_obj;
+	
+	// Read the number of different objects
+	read(fd, &nb_obj, sizeof(int));
+	printf("objects : %d\n", nb_obj);
+}
+
 void setObjects(int fd, int nbval, char* val[]) {
 	if (nbval%6 != 0) return usage();
 	int nb_obj = nbval/6; //Number of objects in params (each object need 6 params)
+	int width, height;
+	// Read height and width
+	read(fd, &width, sizeof(int));
+	read(fd, &height, sizeof(int));
 	char** cur_obj;
 	char* file;
 	unsigned frames;
@@ -80,6 +97,19 @@ void setObjects(int fd, int nbval, char* val[]) {
 		printf("Incorrect number of object (found %d, at least %d needed)\n", nb_obj, old_nb_obj);
 		usage();
 	}
+	//Save old map
+	lseek(fd, -sizeof(int)*height*width, SEEK_END);
+	int** objMap;
+	objMap = malloc(sizeof(int*)*width);
+	for (int i = 0; i < width; ++i) objMap[i] = malloc(sizeof(int)*height);
+	int obj_val;
+	for (int y = 0 ; y < height ; y++) {
+		for (int x = 0 ; x < width ; x++) {
+			read(fd, &obj_val, sizeof(int));
+			objMap[x][y] = obj_val;
+		}
+	}
+
 	lseek(fd, 2*sizeof(int), SEEK_SET);
 	write(fd, &nb_obj, sizeof(int));
 	for(int i = 0; i < nb_obj; ++i){
@@ -103,6 +133,13 @@ void setObjects(int fd, int nbval, char* val[]) {
 		write(fd, &param[1], sizeof(int)); // The destructibility of the object
 		write(fd, &param[2], sizeof(int)); // The collectibility of the object
 		write(fd, &param[3], sizeof(int)); // The generability of the object
+	}
+
+	//And we rewrite the map
+	for (int y = 0 ; y < height ; y++) {
+		for (int x = 0 ; x < width ; x++) {
+			write(fd, &objMap[x][y], sizeof(int));
+		}
 	}
 }
 
@@ -234,13 +271,12 @@ int main(int argc, char* argv[]){
 			setDim(fd, type, atoi(argv[3]));
 			break;
 		case SET_OBJECT:
-			printf("Action SET_OBJECT\n");
 			fd = open(argv[1], O_RDWR);
 			setObjects(fd, argc-3, argv+3);
 			break;
 		case PRUNE:
-			printf("Action PRUNE\n");
 			fd = open(argv[1], O_RDWR);
+			pruneObjects(fd);
 			break;
 		default:
 			break;
