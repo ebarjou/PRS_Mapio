@@ -66,17 +66,91 @@ void get(int fd, int type) {
 	}
 }
 
+void file_cut(int fd, int size){
+	char c[1];
+	int pos;
+	pos = lseek(fd, size, SEEK_CUR);
+	while(read(fd, c, sizeof(char))){
+		lseek(fd, -(size+1), SEEK_CUR);
+		write(fd, c, sizeof(char));
+		lseek(fd, size, SEEK_CUR);
+	}
+}
+
 void pruneObjects(int fd){
 	int width, height;
 	// Read height and width
 	read(fd, &width, sizeof(int));
 	read(fd, &height, sizeof(int));
-	
-	int nb_obj;
-	
+	int nb_obj, new_nb_obj;
 	// Read the number of different objects
 	read(fd, &nb_obj, sizeof(int));
 	printf("objects : %d\n", nb_obj);
+	//Save all object
+	int obj_used[nb_obj];
+	
+	int solidity[nb_obj], destructibility[nb_obj], collectibility[nb_obj], generability[nb_obj];
+	unsigned nb_sprites[nb_obj];
+	int file_len[nb_obj];
+	char* filename[nb_obj];
+	
+	for(int i = 0 ; i < nb_obj ; i++) {
+		obj_used[i] = 0;
+		read(fd, &file_len[i], sizeof(int));
+		filename[i] = malloc(sizeof(int)*(file_len[i]+1));
+		for (int j = 0 ; j < file_len[i] ; j++)
+			read(fd, &filename[i][j], sizeof(char));
+		filename[i][file_len[i]]='\0';
+		read(fd, &nb_sprites[i], sizeof(unsigned)); // The number of frames/sprites
+		
+		read(fd, &solidity[i], sizeof(int)); // The solidity of the object (0|1|2)
+		
+		read(fd, &destructibility[i], sizeof(int)); // The destructibility of the object (0|1)
+		
+		read(fd, &collectibility[i], sizeof(int)); // The collectibility of the object (0|1)
+		
+		read(fd, &generability[i], sizeof(int)); // The generability of the object (0|1)
+	}
+	
+	//Save old map
+	lseek(fd, -sizeof(int)*height*width, SEEK_END);
+	int** objMap;
+	objMap = malloc(sizeof(int*)*width);
+	for (int i = 0; i < width; ++i) objMap[i] = malloc(sizeof(int)*height);
+	int obj_val;
+	for (int y = 0 ; y < height ; y++) {
+		for (int x = 0 ; x < width ; x++) {
+			read(fd, &obj_val, sizeof(int));
+			objMap[x][y] = obj_val;
+			if (obj_val >= 0) {
+				if (obj_used[obj_val] == 0){
+					obj_used[obj_val] = 1;
+					new_nb_obj++;
+				}
+			}
+		}
+	}
+	//Rewrite used objects
+	lseek(fd, sizeof(int)*2, SEEK_SET);
+	write(fd, &new_nb_obj, sizeof(int));
+	for(int i = 0 ; i < nb_obj ; i++) {
+		if (obj_used[i] == 1){
+			write(fd, &file_len[i], sizeof(int)); // The length of the filename
+			write(fd, filename[i], file_len[i]*sizeof(char)); // Then, the filename
+			write(fd, &nb_sprites[i], sizeof(unsigned)); // The number of frames/sprites
+			write(fd, &solidity[i], sizeof(int)); // The solidity of the object (0|1|2)
+			write(fd, &destructibility[i], sizeof(int)); // The destructibility of the object
+			write(fd, &collectibility[i], sizeof(int)); // The collectibility of the object
+			write(fd, &generability[i], sizeof(int)); // The generability of the object
+		}
+	}
+	//And we rewrite the map
+	for (int y = 0 ; y < height ; y++) {
+		for (int x = 0 ; x < width ; x++) {
+			write(fd, &objMap[x][y], sizeof(int));
+		}
+	}
+	//TODO truncate
 }
 
 void setObjects(int fd, int nbval, char* val[]) {
