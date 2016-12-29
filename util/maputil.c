@@ -82,7 +82,8 @@ void pruneObjects(int fd){
 	// Read height and width
 	read(fd, &width, sizeof(int));
 	read(fd, &height, sizeof(int));
-	int nb_obj, new_nb_obj;
+	int nb_obj;
+	int new_nb_obj = 0;
 	// Read the number of different objects
 	read(fd, &nb_obj, sizeof(int));
 	printf("objects : %d\n", nb_obj);
@@ -150,7 +151,9 @@ void pruneObjects(int fd){
 			write(fd, &objMap[x][y], sizeof(int));
 		}
 	}
-	//TODO truncate
+	//Then we truncate the file
+	int offset = lseek(fd, 0, SEEK_CUR);
+	ftruncate(fd, offset);
 }
 
 void setObjects(int fd, int nbval, char* val[]) {
@@ -283,6 +286,8 @@ void setDim(int fd, int type, int newVal) {
 	}
 	//Now we truncate the file if needed (new size < old size)
 	//TODO : si le fichier est plus, petit, ftruncate(fd, size);
+	int offset = lseek(fd, 0, SEEK_CUR);
+	ftruncate(fd, offset);
 }
 
 int parseAction(char* arg){
@@ -321,6 +326,7 @@ int parseMapvar(char* arg){
 	return -1;
 }
 
+// TODO : Replace malloc or free them
 int main(int argc, char* argv[]){
 	if (argc < 3) usage();
 	int action, type, fd;
