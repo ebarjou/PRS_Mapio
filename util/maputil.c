@@ -239,28 +239,30 @@ void setDim(int fd, int type, int newVal) {
 		newHeight = newVal;
 	}
 	//Now we need to move all objects on the map to match the new size
-	//	TODO : Nettoyer le code, remplacer les read par des lseek
 	int null, nb_obj;
-	lseek(fd, 0, SEEK_SET);
+	lseek(fd, 3*sizeof(int), SEEK_SET);
+	/*read(fd, &null, sizeof(int));
 	read(fd, &null, sizeof(int));
-	read(fd, &null, sizeof(int));
-	read(fd, &nb_obj, sizeof(int));
+	read(fd, &nb_obj, sizeof(int));*/
 	for(int i = 0; i < nb_obj; i++) {
 		int file_length;
 		read(fd, &file_length, sizeof(int));
-		char obj;
+		lseek(fd, file_length*sizeof(char), SEEK_CUR);
+		lseek(fd, sizeof(unsigned), SEEK_CUR);
+		lseek(fd, 4*sizeof(int), SEEK_CUR);
+		/*char obj;
 		for (int j = 0 ; j < file_length ; j++)
 			read(fd, &obj, sizeof(char));
 		read(fd, &null, sizeof(unsigned));
 		read(fd, &null, sizeof(int));
 		read(fd, &null, sizeof(int));
 		read(fd, &null, sizeof(int));
-		read(fd, &null, sizeof(int));
+		read(fd, &null, sizeof(int));*/
 	}
 	//Init 2D array that represent the new map
-	int** objMap;
-	objMap = malloc(sizeof(int*)*newWidth);
-	for (int i = 0; i < newWidth; ++i) objMap[i] = malloc(sizeof(int)*newHeight);
+	int objMap[newWidth][newHeight];
+	//objMap = malloc(sizeof(int*)*newWidth);
+	//for (int i = 0; i < newWidth; ++i) objMap[i] = malloc(sizeof(int)*newHeight);
 	//Init the map empty
 	for (int y = 0 ; y < newHeight ; y++)
 		for (int x = 0 ; x < newWidth ; x++) objMap[x][y] = -1;
@@ -279,13 +281,13 @@ void setDim(int fd, int type, int newVal) {
 	lseek(fd, position, SEEK_SET);
 	for (int y = 0 ; y < newHeight ; y++) {
 		for (int x = 0 ; x < newWidth ; x++) {
-			printf("%d.", objMap[x][y]==-1?0:1);
+			//printf("%d.", objMap[x][y]==-1?0:1);
 			write(fd, &objMap[x][y], sizeof(int));
 		}
-		printf("\n");
+		//printf("\n");
 	}
-	//Now we truncate the file if needed (new size < old size)
-	//TODO : si le fichier est plus, petit, ftruncate(fd, size);
+	//Now we truncate the file to the current position :
+	//Either it was already at the end, or it now is
 	int offset = lseek(fd, 0, SEEK_CUR);
 	ftruncate(fd, offset);
 }
