@@ -11,7 +11,7 @@
 
 #include "timer.h"
 
-// Return number of elapsed µsec since... a long time ago
+// Return number of elapsed ï¿½sec since... a long time ago
 static unsigned long get_time (void)
 {
 	struct timeval tv;
@@ -26,19 +26,19 @@ static unsigned long get_time (void)
 
 #ifdef PADAWAN
 
-struct evenement event{
+typedef struct evenement {
 	void *param;
-}
+} event;
 event* current_event;
 
 pthread_t daemon;
 
 void traitant_event(int sig){
-	// TODO 4.3 + vérifier que 4.1 et 4.2 sont fonctionnels
+	// TODO 4.3 + verifier que 4.1 et 4.2 sont fonctionnels
 	if (pthread_self() != daemon) return;
-	
-	printf("Je suis le thread n°%d\n", daemon);
-	printf ("sdl_push_event(%p) appelée au temps %ld\n",
+
+	printf("Je suis le thread n%lu\n", (long unsigned int)daemon);
+	printf ("sdl_push_event(%p) appelee au temps %ld\n",
 		current_event->param, get_time ());
 }
 
@@ -60,14 +60,14 @@ void *catch_alrms(void *p) {
 // timer_init returns 1 if timers are fully implemented, 0 otherwise
 int timer_init (void)
 {
-	// Vérifier que 4.1 est fonctionnel
+	// Vï¿½rifier que 4.1 est fonctionnel
 	pthread_create(&daemon, NULL, catch_alrms, NULL);
 	return 0; // Implementation not ready
 }
 
 void timer_set (Uint32 delay, void *param)
 {
-	// TODO 4.3 + vérifier que 4.2 est fonctionnel
+	// TODO 4.3 + vï¿½rifier que 4.2 est fonctionnel
 	event *new_event = malloc(sizeof(event));
 	new_event->param = param;
 	current_event = new_event;
@@ -78,7 +78,7 @@ void timer_set (Uint32 delay, void *param)
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 0;
 	if (setitimer(ITIMER_REAL, &timer, NULL) == -1) {
-		perror("Erreur à l'appel de setitimer()");
+		perror("Erreur ï¿½ l'appel de setitimer()");
 		exit(1);
 	}
 }
