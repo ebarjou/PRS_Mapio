@@ -52,8 +52,8 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 maputil: util/maputil.c
-	$(CC) util/maputil.c -o maputil
+	$(CC) $^ -o $@
 
 .PHONY: clean
 clean: 
-	rm -f game obj/*.o deps/*.d
+	rm -f game obj/*.o deps/*.d maputil
