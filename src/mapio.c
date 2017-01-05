@@ -44,7 +44,6 @@ void map_new (unsigned width, unsigned height)
 
 void map_save (char *filename)
 {
-  // TODO : Verifier les valeurs de retours des read/write
   mkdir("./maps", 0777);
   int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
   int error = 0;
@@ -158,7 +157,6 @@ void map_load (char *filename)
     for (int j = 0 ; j < file_length ; j++)
       read(fd, &obj_filename[j], sizeof(char))<0?++error:error;
     obj_filename[file_length]='\0';
-    //read(fd, obj_filename, file_length*sizeof(char));
 
     unsigned nb_sprites;
     read(fd, &nb_sprites, sizeof(unsigned))<0?++error:error; // The number of frames/sprites
@@ -196,8 +194,7 @@ void map_load (char *filename)
   close(fd);
   if(error>0){
     fprintf (stderr, "Error occured during load\n");
-  }	
-  //exit_with_error ("Map load is not yet implemented\n");
+  }
 }
 
 #endif

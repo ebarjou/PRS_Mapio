@@ -40,15 +40,6 @@ pthread_t daemon;
 
 int set_current_event()
 {
-	/*printf("Liste des timers : \n");
-	for (int i = 0; i < event_size; ++i){
-		if (next_events[i] != NULL){
-			printf("\t%d dans %dus\n",i,  next_events[i]->t - get_time());
-		} else {
-			printf("\t%d (vide)\n",i);
-		}
-		
-	}*/
 	event* closest = NULL;
 	for (int i = 0; i < event_size; ++i){
 		if (next_events[i] != NULL && (closest == NULL || closest->t > next_events[i]->t)) {
@@ -73,10 +64,6 @@ int set_current_event()
 }
 
 void traitant_event(int sig){
-	/*
-	 TODO: Le signal n'est pas géré par le thread daemon mais par le thread principal
-	*/
-	//if (pthread_self() != daemon) return;
 	sdl_push_event(next_events[current_event]->param);
 	free(next_events[current_event]);
 	next_events[current_event] = NULL;
@@ -91,10 +78,8 @@ void *catch_alrms(void *p) {
 	s.sa_handler = traitant_event;
 	sigemptyset(&s.sa_mask);
 	s.sa_flags=0;
-	//while (1) {
-		sigaction(SIGALRM, &s, NULL);
-		sigsuspend(&masque);
-	//}
+	sigaction(SIGALRM, &s, NULL);
+	sigsuspend(&masque);
 	return NULL;
 }
 
@@ -108,6 +93,7 @@ int timer_init (void)
 	return 1;
 }
 
+// Add a timer to the current list
 int add_timer(event *e)
 {
 	for (int i = 0; i < event_size; ++i){
@@ -116,7 +102,7 @@ int add_timer(event *e)
 			return 1;
 		}
 	}
-	event **rlc_events = (event*)malloc(sizeof(event*)*event_size*2);
+	event **rlc_events = malloc(sizeof(event*)*event_size*2);
 	for (int i = 0; i < event_size*2; ++i) rlc_events[i] = NULL;
 	for (int i = 0; i < event_size; ++i) rlc_events[i] = next_events[i];
 	event_size *= 2;

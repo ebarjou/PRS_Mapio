@@ -10,6 +10,7 @@ enum action_enum {GET, SET_DIM, SET_OBJECT, PRUNE};
 enum mapvar_enum {WIDTH, HEIGHT, OBJECTS, INFO};
 enum object_carac {SOLID, DESTRU, COLLEC, GENER};
 
+// A classic usage() function
 void usage(){
 	printf("maputil <file> --get[width, height, objects, info]\n");
 	printf("maputil <file> --set[width, height] <size>\n");
@@ -18,6 +19,8 @@ void usage(){
 	exit(0);
 }
 
+// If the user asked for a --get
+// Give them the info they asked for
 void get(int fd, int type) {
 	int error = 0;
 	int width, height;
@@ -66,17 +69,8 @@ void get(int fd, int type) {
 	}
 }
 
-void file_cut(int fd, int size){
-	char c[1];
-	int pos;
-	pos = lseek(fd, size, SEEK_CUR);
-	while(read(fd, c, sizeof(char))){
-		lseek(fd, -(size+1), SEEK_CUR);
-		write(fd, c, sizeof(char));
-		lseek(fd, size, SEEK_CUR);
-	}
-}
-
+// If the user asked for a --pruneobjects
+// Delete the unused Objects
 void pruneObjects(int fd){
 	int width, height;
 	// Read height and width
@@ -156,6 +150,8 @@ void pruneObjects(int fd){
 	ftruncate(fd, offset);
 }
 
+// If the user asked for a --setobjects
+// Add Objects to the objects list(does the opposite of pruneObjects)
 void setObjects(int fd, int nbval, char* val[]) {
 	if (nbval%6 != 0) return usage();
 	int nb_obj = nbval/6; //Number of objects in params (each object need 6 params)
@@ -220,6 +216,8 @@ void setObjects(int fd, int nbval, char* val[]) {
 	}
 }
 
+// If the user asked for a --set[height/width]
+// Modify the height or the width of the map
 void setDim(int fd, int type, int newVal) {
 	int oldHeight, oldWidth, newHeight, newWidth, arg;
 	read(fd, &oldWidth, sizeof(int));
@@ -241,28 +239,15 @@ void setDim(int fd, int type, int newVal) {
 	//Now we need to move all objects on the map to match the new size
 	int null, nb_obj;
 	lseek(fd, 3*sizeof(int), SEEK_SET);
-	/*read(fd, &null, sizeof(int));
-	read(fd, &null, sizeof(int));
-	read(fd, &nb_obj, sizeof(int));*/
 	for(int i = 0; i < nb_obj; i++) {
 		int file_length;
 		read(fd, &file_length, sizeof(int));
 		lseek(fd, file_length*sizeof(char), SEEK_CUR);
 		lseek(fd, sizeof(unsigned), SEEK_CUR);
 		lseek(fd, 4*sizeof(int), SEEK_CUR);
-		/*char obj;
-		for (int j = 0 ; j < file_length ; j++)
-			read(fd, &obj, sizeof(char));
-		read(fd, &null, sizeof(unsigned));
-		read(fd, &null, sizeof(int));
-		read(fd, &null, sizeof(int));
-		read(fd, &null, sizeof(int));
-		read(fd, &null, sizeof(int));*/
 	}
 	//Init 2D array that represent the new map
 	int objMap[newWidth][newHeight];
-	//objMap = malloc(sizeof(int*)*newWidth);
-	//for (int i = 0; i < newWidth; ++i) objMap[i] = malloc(sizeof(int)*newHeight);
 	//Init the map empty
 	for (int y = 0 ; y < newHeight ; y++)
 		for (int x = 0 ; x < newWidth ; x++) objMap[x][y] = -1;
@@ -281,10 +266,8 @@ void setDim(int fd, int type, int newVal) {
 	lseek(fd, position, SEEK_SET);
 	for (int y = 0 ; y < newHeight ; y++) {
 		for (int x = 0 ; x < newWidth ; x++) {
-			//printf("%d.", objMap[x][y]==-1?0:1);
 			write(fd, &objMap[x][y], sizeof(int));
 		}
-		//printf("\n");
 	}
 	//Now we truncate the file to the current position :
 	//Either it was already at the end, or it now is
@@ -292,6 +275,7 @@ void setDim(int fd, int type, int newVal) {
 	ftruncate(fd, offset);
 }
 
+// Read the action the user asked for (get, set, pruneobjects)
 int parseAction(char* arg){
 	char* cmd = arg;
 	if(cmd[0] == '-' && cmd[1] == '-'){
@@ -314,6 +298,8 @@ int parseAction(char* arg){
 	return -1;
 }
 
+// Get the information the user asked for/wants to change
+// (height, width, objects, infos)
 int parseMapvar(char* arg){
 	char* cmd = arg+5; // Skip "--[g/s]et"
 	if (strcmp(cmd, "height") == 0){
@@ -328,21 +314,25 @@ int parseMapvar(char* arg){
 	return -1;
 }
 
-// TODO : Replace malloc or free them
+// The main treatment : Find what the user asks for,
+// And make their wishes come true
 int main(int argc, char* argv[]){
 	if (argc < 3) usage();
 	int action, type, fd;
 	printf("Ouverture du fichier %s\n", argv[1]);
+	// Get the action (get, set, pruneobjects))
 	action = parseAction(argv[2]);
 	if(action == -1){
 		usage();
 	}
 	if (action != PRUNE){
+		// get the information type (height, width, objects, infos)
 		type = parseMapvar(argv[2]);
 		if(type == -1){
 			usage();
 		}
 	}
+	// Then treat the action and type accordingly
 	switch (action){
 		case GET:
 			fd = open(argv[1], O_RDONLY);
@@ -360,7 +350,7 @@ int main(int argc, char* argv[]){
 			fd = open(argv[1], O_RDWR);
 			pruneObjects(fd);
 			break;
-		default:
+		default: // Should never happen
 			break;
 	}
 	close(fd);
